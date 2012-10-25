@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 if [ -e zImage ]; then
 rm zImage
@@ -14,38 +14,52 @@ KERNEL_PATH="/home/umberto/Scrivania/speedwizzkernel_2.0_update7/kernel"
 #TOOLCHAIN="/home/simone/arm-2009q3/bin/arm-none-linux-gnueabi-"
 TOOLCHAIN="/home/umberto/Scrivania/speedwizzkernel_2.0_update7/android-toolchain-eabi/bin/arm-eabi-"
 #TOOLCHAIN="/home/simone/android/system/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-"
-ROOTFS_PATH="/home/umberto/Scrivania/speedwizzkernel_2.0_update7/kernel/initramfs"
+INITRAMFS_SOURCE="/home/umberto/Scrivania/speedwizzkernel_2.0_update7/kernel/initramfs"
 
-export KBUILD_BUILD_VERSION="speedwizz_kernel_3.4"
 export KERNELDIR=$KERNEL_PATH
-
+export INITRAMFS_SOURCE=$INITRAMFS_SOURCE
+export PARENT_DIR=`readlink -f ..`
 export USE_SEC_FIPS_MODE=true
 
-echo "Cleaning latest build"
-make ARCH=arm CROSS_COMPILE=$TOOLCHAIN -j`grep 'processor' /proc/cpuinfo | wc -l` mrproper
+if [ "${1}" != "" ];then
+  export KERNELDIR=`readlink -f ${1}`
+fi
 
-# Making our .config
-make u1_speedmod_defconfig
+INITRAMFS_TMP="/tmp/initramfs-source"
 
-make -j`grep 'processor' /proc/cpuinfo | wc -l` ARCH=arm CROSS_COMPILE=$TOOLCHAIN CONFIG_INITRAMFS_SOURCE="$ROOTFS_PATH" >> compile.log 2>&1 || exit -1
+if [ ! -f $KERNELDIR/.config ];
+then
+  make u1_speedmod_defconfig
+fi
 
-# Copying kernel modules
-find -name '*.ko' -exec cp -av {} $ROOTFS_PATH/lib/modules/ \;
+. $KERNELDIR/.config
 
-make -j`grep 'processor' /proc/cpuinfo | wc -l` ARCH=arm CROSS_COMPILE=$TOOLCHAIN CONFIG_INITRAMFS_SOURCE="$ROOTFS_PATH" || exit -1
+export ARCH=arm
+export CROSS_COMPILE=$TOOLCHAIN
 
-# Copy Kernel Image
-rm -f $KERNEL_PATH/releasetools/zip/$KBUILD_BUILD_VERSION.zip
-cp -f $KERNEL_PATH/arch/arm/boot/zImage .
-cp -f $KERNEL_PATH/arch/arm/boot/zImage $KERNEL_PATH/releasetools/zip
+cd $KERNELDIR/
+nice -n 10 make -j2 || exit 1
 
-cd arch/arm/boot
-tar cf $KERNEL_PATH/arch/arm/boot/$KBUILD_BUILD_VERSION.tar ../../../zImage && ls -lh $KBUILD_BUILD_VERSION.tar
+#remove previous initramfs files
+rm -rf $INITRAMFS_TMP
+rm -rf $INITRAMFS_TMP.cpio
+#copy initramfs files to tmp directory
+cp -ax $INITRAMFS_SOURCE $INITRAMFS_TMP
+#clear git repositories in initramfs
+find $INITRAMFS_TMP -name ".git*" -exec rm -rf {} \;
+#remove empty directory placeholders
+find $INITRAMFS_TMP -name EMPTY_DIRECTORY -exec rm -rf {} \;
+rm -rf $INITRAMFS_TMP/tmp/*
+#remove mercurial repository
+rm -rf $INITRAMFS_TMP/.hg
+#copy modules into initramfs
+mkdir -p $INITRAMFS/lib/modules
+find -name '*.ko' -exec cp -av {} $INITRAMFS_TMP/lib/modules/ \;
+chmod 644 $INITRAMFS_TMP/lib/modules/*
+${CROSS_COMPILE}strip --strip-unneeded $INITRAMFS_TMP/lib/modules/*
 
-cd ../../..
-cd releasetools/zip
-zip -r $KBUILD_BUILD_VERSION.zip *
+nice -n 10 make -j2 zImage CONFIG_INITRAMFS_SOURCE="$INITRAMFS_TMP" || exit 1
 
-cp $KERNEL_PATH/arch/arm/boot/$KBUILD_BUILD_VERSION.tar $KERNEL_PATH/releasetools/tar/$KBUILD_BUILD_VERSION.tar
-rm $KERNEL_PATH/arch/arm/boot/$KBUILD_BUILD_VERSION.tar
-rm $KERNEL_PATH/releasetools/zip/zImage
+#cp $KERNELDIR/arch/arm/boot/zImage zImage
+$KERNELDIR/mkshbootimg.py $KERNELDIR/zImage $KERNELDIR/arch/arm/boot/zImage $KERNELDIR/payload.tar $KERNELDIR/recovery.tar.xz
+
