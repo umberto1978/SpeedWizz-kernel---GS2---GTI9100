@@ -29,7 +29,7 @@ INITRAMFS_TMP="/tmp/initramfs-source"
 
 if [ ! -f $KERNELDIR/.config ];
 then
-  make u1_speedmod_defconfig
+  make speedwizz_defconfig
 fi
 
 . $KERNELDIR/.config
