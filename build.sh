@@ -21,6 +21,8 @@ export INITRAMFS_SOURCE=$INITRAMFS_SOURCE
 export PARENT_DIR=`readlink -f ..`
 export USE_SEC_FIPS_MODE=true
 
+make ARCH=arm CROSS_COMPILE=$TOOLCHAIN -j`grep 'processor' /proc/cpuinfo | wc -l` mrproper
+
 if [ "${1}" != "" ];then
   export KERNELDIR=`readlink -f ${1}`
 fi
@@ -29,7 +31,7 @@ INITRAMFS_TMP="/tmp/initramfs-source"
 
 if [ ! -f $KERNELDIR/.config ];
 then
-  make speedwizz_defconfig
+  make u1_speedmod_defconfig
 fi
 
 . $KERNELDIR/.config
@@ -38,7 +40,7 @@ export ARCH=arm
 export CROSS_COMPILE=$TOOLCHAIN
 
 cd $KERNELDIR/
-nice -n 10 make -j2 || exit 1
+nice -n 10 make -j2 >> compile.log 2>&1 || exit 1
 
 #remove previous initramfs files
 rm -rf $INITRAMFS_TMP
