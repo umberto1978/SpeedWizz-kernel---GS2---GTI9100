@@ -776,7 +776,7 @@ static int m5mo_flash_power(int enable)
 		if (regulator_is_enabled(movie)) {
 			printk(KERN_DEBUG "%s: m5mo_torch set~~~~", __func__);
 			is_torch = true;
-			goto torch_exit;
+			//goto torch_exit;
 		}
 		is_torch = false;
 #endif
@@ -788,7 +788,7 @@ static int m5mo_flash_power(int enable)
 
 #if defined(CONFIG_MACH_Q1_BD)
 		if (is_torch)
-			goto torch_exit;
+			//goto torch_exit;
 #endif
 
 		if (regulator_is_enabled(flash))
@@ -796,9 +796,9 @@ static int m5mo_flash_power(int enable)
 		if (regulator_is_enabled(movie))
 			regulator_disable(movie);
 	}
-torch_exit:
+/* torch_exit:
 	regulator_put(flash);
-	regulator_put(movie);
+	regulator_put(movie); */
 
 	return 0;
 }
@@ -4176,13 +4176,13 @@ static unsigned int sec_bat_get_lpcharging_state(void)
 	return val;
 }
 
-static void sec_bat_initial_check(void)
+/* static void sec_bat_initial_check(void)
 {
 	pr_info("%s: connected_cable_type:%d\n",
 		__func__, connected_cable_type);
 	if (connected_cable_type != CABLE_TYPE_NONE)
 		max8997_muic_charger_cb(connected_cable_type);
-}
+} */
 
 static struct sec_bat_platform_data sec_bat_pdata = {
 	.fuel_gauge_name	= "fuelgauge",
