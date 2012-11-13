@@ -23,7 +23,7 @@ payload_extracted=0;
 
 cd /;
 
-# if [ "$install_root" == "on" ]; then
+#if [ "$install_root" == "on" ]; then
 	if [ -s /system/xbin/su ]; then
 		echo "Superuser already exists";
 	else
@@ -98,7 +98,7 @@ if [ ! -s /system/xbin/ntfs-3g ]; then
 fi;
 
 echo "Checking if cwmanager is installed"
-if [ ! -f /system/.speedwizz/cwmmanager3-installed ];
+if [ ! -f /system/.siyah/cwmmanager3-installed ];
 then
   if [ "$payload_extracted" == "0" ]; then
     extract_payload;
@@ -110,31 +110,12 @@ then
   $BB xzcat /res/misc/payload/CWMManager.apk.xz > /system/app/CWMManager.apk;
   $BB chown 0.0 /system/app/CWMManager.apk;
   $BB chmod 644 /system/app/CWMManager.apk;
-  $BB mkdir /system/.speedwizz;
-  $BB chmod 755 /system/.speedwizz;
-  echo 1 > /system/.speedwizz/cwmmanager3-installed
-fi;
-
-echo "Checking if NSTools is installed"
-if [ ! -f /system/.speedwizzapp/NSTools-installed ];
-then
-  if [ "$payload_extracted" == "0" ]; then
-    extract_payload;
-  fi;
-  $BB rm /system/app/*nstools*.apk;
-  $BB rm /data/dalvik-cache/*mobi.cyann.nstools-1.apk*;
-  $BB rm /data/app/mobi.cyann.nstools*.apk;
-
-  $BB xzcat /res/misc/payload/mobi.cyann.nstools-1.apk.xz > /system/app/mobi.cyann.nstools-1.apk;
-  $BB chown 0.0 /system/app/mobi.cyann.nstools-1.apk;
-  $BB chmod 644 /system/app/mobi.cyann.nstools-1.apk;
-  $BB mkdir /system/.speedwizzapp;
-  $BB chmod 755 /system/.speedwizzapp;
-  echo 1 > /system/.speedwizzapp/NSTools-installed
+  $BB mkdir /system/.siyah;
+  $BB chmod 755 /system/.siyah;
+  echo 1 > /system/.siyah/cwmmanager3-installed
 fi;
 
 $BB rm -rf /res/misc/payload;
-
 
 $BB mount -t rootfs -o remount,rw rootfs;
 $BB mount -o remount,rw /system;

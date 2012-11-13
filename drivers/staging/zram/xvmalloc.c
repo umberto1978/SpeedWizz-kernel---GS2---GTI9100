@@ -508,4 +508,3 @@ u64 xv_get_total_size_bytes(struct xv_pool *pool)
 	return pool->total_pages << PAGE_SHIFT;
 }
 EXPORT_SYMBOL_GPL(xv_get_total_size_bytes);
-
