@@ -5,53 +5,21 @@
 #exec >>/data/user.log
 #exec 2>&1
 
-mkdir /data/.siyah
-chmod 777 /data/.siyah
-ccxmlsum=`md5sum /res/customconfig/customconfig.xml | awk '{print $1}'`
-if [ "a${ccxmlsum}" != "a`cat /data/.siyah/.ccxmlsum`" ];
+#if [ "$logger" == "on" ];then
+#insmod /lib/modules/logger.ko
+#fi
+
+if [ -f /system/.noswap ];
 then
-#  rm -f /data/.siyah/*.profile
-  echo ${ccxmlsum} > /data/.siyah/.ccxmlsum
-fi
-[ ! -f /data/.siyah/default.profile ] && cp /res/customconfig/default.profile /data/.siyah
-[ ! -f /data/.siyah/battery.profile ] && cp /res/customconfig/battery.profile /data/.siyah
-[ ! -f /data/.siyah/performance.profile ] && cp /res/customconfig/performance.profile /data/.siyah
-
-. /res/customconfig/customconfig-helper
-read_defaults
-read_config
-
-#cpu undervolting
-echo "${cpu_undervolting}" > /sys/devices/system/cpu/cpu0/cpufreq/vdd_levels
-
-#change cpu step count
-case "${cpustepcount}" in
-  5)
-    echo 1200 1000 800 500 200 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-    ;;
-  6)
-    echo 1400 1200 1000 800 500 200 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-    ;;
-  7)
-    echo 1500 1400 1200 1000 800 500 200 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-    ;;
-  8)
-    echo 1600 1400 1200 1000 800 500 200 100 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-    ;;
-  9)
-    echo 1600 1500 1400 1200 1000 800 500 200 100 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-    ;;
-  16)
-    echo 1600 1500 1400 1300 1200 1100 1000 900 800 700 600 500 400 300 200 100 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-    ;;
-esac;
-
-if [ "$logger" == "on" ];then
-insmod /lib/modules/logger.ko
-fi
+	echo "File .noswap found. zram activation will be bypassed."
+else
+echo $((300*1024*1024)) > /sys/block/zram0/disksize;
+mkswap /dev/block/zram0;
+swapon /dev/block/zram0;
+fi;
 
 # disable debugging on some modules
-if [ "$logger" == "off" ];then
+#if [ "$logger" == "off" ];then
   rm -rf /dev/log
   echo 0 > /sys/module/ump/parameters/ump_debug_level
   echo 0 > /sys/module/mali/parameters/mali_debug_level
@@ -62,7 +30,17 @@ if [ "$logger" == "off" ];then
   echo 0 > /sys/module/alarm_dev/parameters/debug_mask
   echo 0 > /sys/module/binder/parameters/debug_mask
   echo 0 > /sys/module/xt_qtaguid/parameters/debug_mask
-fi
+#fi
+
+# for init.d support
+if [ -d /system/etc/init.d ]; then
+        echo "init.d already exists";
+else
+	mount -o remount,rw /system;	
+        mkdir /system/etc/init.d;
+	chmod -R 755 /system/etc/init.d;
+	mount -o remount,ro /system;
+fi;
 
 # for ntfs automounting
 insmod /lib/modules/fuse.ko
@@ -77,7 +55,7 @@ mount -o remount,ro /
 /sbin/busybox sh /sbin/ext/install.sh
 
 # run this because user may have chosen not to install root at boot but he may need it later and install it using ExTweaks
-/sbin/busybox sh /sbin/ext/su-helper.sh
+#/sbin/busybox sh /sbin/ext/su-helper.sh
 
 ##### Early-init phase tweaks #####
 /sbin/busybox sh /sbin/ext/tweaks.sh
@@ -93,13 +71,13 @@ sleep 30
 
 sleep 12
 #apply last soundgasm level on boot
-/res/uci.sh soundgasm_hp $soundgasm_hp
+#/res/uci.sh soundgasm_hp $soundgasm_hp
 
 # apply ExTweaks defaults
-/res/uci.sh apply
+#/res/uci.sh apply
 
 #usb mode
-/res/customconfig/actions/usb-mode ${usb_mode}
+#/res/customconfig/actions/usb-mode ${usb_mode}
 
 ##### init scripts #####
 /sbin/busybox sh /sbin/ext/run-init-scripts.sh
