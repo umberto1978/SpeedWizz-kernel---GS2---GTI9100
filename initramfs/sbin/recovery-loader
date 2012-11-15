@@ -1,0 +1,53 @@
+#!/sbin/busybox sh
+
+mount -t rootfs -o remount,rw rootfs
+insmod /lib/modules/logger.ko
+ln -s /sbin/recovery /sbin/busybox
+
+ln -s /sbin/busybox /sbin/sh
+
+rm /emmc
+mkdir /emmc
+chmod 777 /emmc
+
+rm /sdcard
+mkdir /sdcard
+chmod 777 /sdcard
+
+rm /etc
+mkdir /etc
+cat /res/etc/recovery.fstab > /etc/recovery.fstab
+
+#start adbd
+stop tvout
+
+rm /cache
+mkdir /cache
+chmod 777 /cache
+mount -t ext4 /dev/block/mmcblk0p7 /cache
+mkdir /cache/recovery
+chmod 770 /cache/recovery
+chown system.cache /cache/recovery
+
+
+cd /
+eval $(/sbin/read_boot_headers /dev/block/mmcblk0p5)
+dd bs=512 if=/dev/block/mmcblk0p5 skip=$recovery_offset count=$recovery_len | xzcat | tar x
+
+mkdir -p /mnt/.secondrom
+mount -t vfat /dev/block/mmcblk0p11 /mnt/.secondrom
+mkdir /mnt/.secondrom/.secondrom
+rm /secondrom_cache
+mkdir /secondrom_cache
+mount -t ext4 /mnt/.secondrom/.secondrom/cache.img /secondrom_cache
+mkdir /secondrom_data
+mkdir /secondrom_system
+
+if /sbin/busybox [ -f /cache/recovery/command ];
+then
+  /sbin/busybox cp /res/keys-samsung /res/keys
+  recovery-samsung
+else
+  echo 1 > /sbin/recovery-is-running
+  recovery
+fi;
